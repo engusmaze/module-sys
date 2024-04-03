@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const lib = b.addStaticLibrary(.{
-        .name = "giga-module-sys",
+        .name = "module-sys",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .path = "src/root.zig" },
@@ -24,17 +24,30 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // var module_sys = b.createModule(.{
+    //     .source_file = .{ .path = "src/root.zig" },
+    // });
+    // // we name the module duck which will be used later
+    // try b.modules.put(b.dupe("module_sys"), module_sys);
+
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
     b.installArtifact(lib);
 
+    const module_sys = b.addModule("module-sys", .{
+        .target = target,
+        .optimize = optimize,
+        .root_source_file = .{ .path = "src/root.zig" },
+    });
+
     const exe = b.addExecutable(.{
-        .name = "giga-module-sys",
+        .name = "module-sys",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
     });
+    exe.root_module.addImport("module-sys", module_sys);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const module_sys = @import("./root.zig");
+const module_sys = @import("module-sys");
 
 const ModuleSystem = module_sys.ModuleSystem;
 const module = module_sys.module;
