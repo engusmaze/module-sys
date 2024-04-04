@@ -41,23 +41,23 @@ pub fn build(b: *std.Build) void {
         .root_source_file = .{ .path = "src/root.zig" },
     });
 
-    const exe = b.addExecutable(.{
-        .name = "module-sys",
-        .root_source_file = .{ .path = "src/main.zig" },
+    const example = b.addExecutable(.{
+        .name = "simple",
+        .root_source_file = .{ .path = "examples/simple.zig" },
         .target = target,
         .optimize = optimize,
     });
-    exe.root_module.addImport("module-sys", module_sys);
+    example.root_module.addImport("module-sys", module_sys);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
-    b.installArtifact(exe);
+    b.installArtifact(example);
 
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
     // such a dependency.
-    const run_cmd = b.addRunArtifact(exe);
+    const run_cmd = b.addRunArtifact(example);
 
     // By making the run step depend on the install step, it will be run from the
     // installation directory rather than directly from within the cache directory.

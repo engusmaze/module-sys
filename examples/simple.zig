@@ -4,14 +4,18 @@ const module_sys = @import("module-sys");
 
 const ModuleSystem = module_sys.ModuleSystem;
 const module = module_sys.module;
-const invoke = module_sys.module;
+const invoke = module_sys.invoke;
+const require_modules = module_sys.require_modules;
+
+// pub const std_options: std.Options = .{
+//     .log_level = .info,
+// };
 
 const ModuleA = struct {
     data: u64,
 
     const Self = @This();
-    pub fn init(sys: anytype) Self {
-        _ = sys;
+    pub fn new() Self {
         return Self{
             .data = 69,
         };
@@ -20,20 +24,28 @@ const ModuleA = struct {
     pub fn start(self: *Self, sys: anytype) void {
         _ = self;
         _ = sys;
-        std.debug.print("ModuleA STARTED\n", .{});
+        std.debug.print("ModuleA started\n", .{});
     }
 };
 
 const ModuleB = struct {
     const Self = @This();
-    pub fn init(sys: anytype) Self {
+    pub fn start(self: *Self, sys: anytype) void {
+        _ = self;
+        require_modules(sys, Self, &.{ModuleA});
         const module_a = module(sys, ModuleA);
         std.debug.print("DATA!!!!!!!!!!!!!!!! {any}\n", .{module_a.data});
-        return Self{};
     }
 };
 
 pub fn main() !void {
-    var sys = ModuleSystem(&.{ ModuleA, ModuleB }).init();
-    sys.invoke("start", .{});
+    const TestSystem = ModuleSystem(.{
+        ModuleA,
+        ModuleB,
+    });
+    var test_system = TestSystem.init(.{
+        ModuleA.new(),
+        ModuleB{},
+    });
+    test_system.invoke("start", .{});
 }
