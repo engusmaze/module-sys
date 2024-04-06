@@ -1,15 +1,6 @@
 const std = @import("std");
 
-const module_sys = @import("module-sys");
-
-const ModuleSystem = module_sys.ModuleSystem;
-const module = module_sys.module;
-const invoke = module_sys.invoke;
-const require_modules = module_sys.require_modules;
-
-// pub const std_options: std.Options = .{
-//     .log_level = .info,
-// };
+const mods = @import("module-sys");
 
 const ModuleA = struct {
     data: u64,
@@ -32,20 +23,20 @@ const ModuleB = struct {
     const Self = @This();
     pub fn start(self: *Self, sys: anytype) void {
         _ = self;
-        require_modules(sys, Self, &.{ModuleA});
-        const module_a = module(sys, ModuleA);
+        mods.require(sys, Self, &.{ModuleA});
+        const module_a = mods.get(sys, ModuleA);
         std.debug.print("DATA!!!!!!!!!!!!!!!! {any}\n", .{module_a.data});
     }
 };
 
 pub fn main() !void {
-    const TestSystem = ModuleSystem(.{
+    const TestSystem = struct {
         ModuleA,
         ModuleB,
-    });
-    var test_system = TestSystem.init(.{
+    };
+    var test_system = TestSystem{
         ModuleA.new(),
         ModuleB{},
-    });
-    test_system.invoke("start", .{});
+    };
+    mods.invoke(&test_system, "start", .{});
 }
