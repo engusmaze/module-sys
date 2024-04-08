@@ -23,7 +23,7 @@ const ModuleB = struct {
     const Self = @This();
     pub fn start(self: *Self, sys: anytype) void {
         _ = self;
-        mods.require_before(sys, Self, &.{ModuleA});
+        mods.requireBefore(sys, Self, &.{ModuleA});
         const module_a = mods.get(sys, ModuleA);
         std.debug.print("DATA!!!!!!!!!!!!!!!! {any}\n", .{module_a.data});
     }

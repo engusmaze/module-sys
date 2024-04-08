@@ -1,6 +1,6 @@
 const std = @import("std");
 
-fn find_module_name(SystemType: type, comptime ModuleType: type) ?[]const u8 {
+fn findModuleName(SystemType: type, comptime ModuleType: type) ?[]const u8 {
     inline for (std.meta.fields(SystemType)) |field| {
         if (field.type == ModuleType) {
             return field.name;
@@ -24,7 +24,7 @@ fn RealSystemType(TopType: type) type {
 /// Gets a moduel from module system
 pub inline fn get(sys: anytype, comptime ModuleType: type) *ModuleType {
     const SystemType = RealSystemType(@TypeOf(sys));
-    if (comptime find_module_name(SystemType, ModuleType)) |module_name| {
+    if (comptime findModuleName(SystemType, ModuleType)) |module_name| {
         return &@field(sys, module_name);
     } else {
         @compileError(std.fmt.comptimePrint("Module `{any}` not found in the system", @typeName(ModuleType)));
@@ -67,13 +67,13 @@ pub fn invoke(sys: anytype, comptime function_name: []const u8, args: anytype) v
 pub fn require(sys: anytype, comptime CurrentModule: type, comptime required_modules: []const type) void {
     const SystemType = RealSystemType(@TypeOf(sys));
     inline for (required_modules) |Module| {
-        if (comptime find_module_name(SystemType, Module) == null) {
+        if (comptime findModuleName(SystemType, Module) == null) {
             @compileError(std.fmt.comptimePrint("Module `{s}` requires module `{s}` which is not found in the system", .{ @typeName(CurrentModule), @typeName(Module) }));
         }
     }
 }
 
-pub fn require_before(sys: anytype, comptime CurrentModule: type, comptime required_modules: []const type) void {
+pub fn requireBefore(sys: anytype, comptime CurrentModule: type, comptime required_modules: []const type) void {
     const SystemType = RealSystemType(@TypeOf(sys));
     comptime var current_module_index = 0;
     const system_struct = @typeInfo(SystemType).Struct;
@@ -98,7 +98,7 @@ pub fn require_before(sys: anytype, comptime CurrentModule: type, comptime requi
         },
     });
     inline for (required_modules) |Module| {
-        if (comptime find_module_name(SystemBefore, Module) == null) {
+        if (comptime findModuleName(SystemBefore, Module) == null) {
             @compileError(std.fmt.comptimePrint("Module {s} is required to be defined before module {s} but it wasn't found", .{ @typeName(CurrentModule), @typeName(Module) }));
         }
     }
