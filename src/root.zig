@@ -1,44 +1,105 @@
 const std = @import("std");
 
-fn get_module_field_name(sys: anytype, comptime M: type) ?[]const u8 {
-    inline for (std.meta.fields(@TypeOf(sys))) |field| {
-        if (field.type == M) {
+fn find_module_name(SystemType: type, comptime ModuleType: type) ?[]const u8 {
+    inline for (std.meta.fields(SystemType)) |field| {
+        if (field.type == ModuleType) {
             return field.name;
         }
     }
     return null;
 }
-pub fn get(sys: anytype, comptime M: type) *M {
-    return if (get_module_field_name(sys, M)) |field_name|
-        &@field(sys, field_name)
-    else
-        @compileError(std.fmt.comptimePrint("Module `{any}` wasn't found", @typeName(M)));
+
+fn RealSystemType(TopType: type) type {
+    const topTypeInfo = @typeInfo(TopType);
+    if (topTypeInfo != .Pointer) {
+        @compileError("Expected a reference to a module system instance");
+    }
+    const SystemType = topTypeInfo.Pointer.child;
+    if (@typeInfo(SystemType) != .Struct) {
+        @compileError("Module system should be a struct of modules");
+    }
+    return SystemType;
 }
+
+/// Gets a moduel from module system
+pub inline fn get(sys: anytype, comptime ModuleType: type) *ModuleType {
+    const SystemType = RealSystemType(@TypeOf(sys));
+    if (comptime find_module_name(SystemType, ModuleType)) |module_name| {
+        return &@field(sys, module_name);
+    } else {
+        @compileError(std.fmt.comptimePrint("Module `{any}` not found in the system", @typeName(ModuleType)));
+    }
+}
+
+/// Calls a function on each module of system with specified arguments
 pub fn invoke(sys: anytype, comptime function_name: []const u8, args: anytype) void {
-    search: inline for (std.meta.fields(@TypeOf(sys))) |field| {
-        const Module = field.type;
-        if (!std.meta.hasMethod(Module, function_name))
+    const SystemType = RealSystemType(@TypeOf(sys));
+    search: inline for (std.meta.fields(SystemType)) |field| {
+        const ModuleType = field.type;
+
+        if (!std.meta.hasFn(ModuleType, function_name))
+            continue :search;
+        const function = @field(ModuleType, function_name);
+
+        const params = @typeInfo(@TypeOf(function)).Fn.params;
+        if (params.len < 2)
+            continue :search;
+        if (params[0].type != *ModuleType or params[1].type != null)
             continue :search;
 
-        const params = @typeInfo(@TypeOf(@field(Module, function_name))).Fn.params;
-        if (params[0].type != *Module)
+        const arg_fields = std.meta.fields(@TypeOf(args));
+        const real_params = params[2..params.len];
+        if (arg_fields.len != real_params.len)
             continue :search;
-        if (!params[1].is_generic)
-            continue :search;
-        for (std.meta.fields(args), params[2..params.len]) |arg, param| {
+        for (arg_fields, real_params) |arg, param| {
             if (arg.type != param.type) {
                 continue :search;
             }
         }
 
-        const module_value = &@field(sys, field.name);
-        @call(.auto, @field(Module, function_name), .{ module_value, sys } ++ args);
+        @call(.auto, function, .{ if (@sizeOf(ModuleType) > 0)
+            &@field(sys, field.name)
+        else
+            @constCast(&ModuleType{}), sys } ++ args);
     }
 }
+
 pub fn require(sys: anytype, comptime CurrentModule: type, comptime required_modules: []const type) void {
-    comptime for (required_modules) |Module| {
-        if (get_module_field_name(sys, Module) == null) {
-            @compileError(std.fmt.comptimePrint("Module `{s}` requires module `{s}` but it wasn't found", .{ @typeName(CurrentModule), @typeName(Module) }));
+    const SystemType = RealSystemType(@TypeOf(sys));
+    inline for (required_modules) |Module| {
+        if (comptime find_module_name(SystemType, Module) == null) {
+            @compileError(std.fmt.comptimePrint("Module `{s}` requires module `{s}` which is not found in the system", .{ @typeName(CurrentModule), @typeName(Module) }));
         }
-    };
+    }
+}
+
+pub fn require_before(sys: anytype, comptime CurrentModule: type, comptime required_modules: []const type) void {
+    const SystemType = RealSystemType(@TypeOf(sys));
+    comptime var current_module_index = 0;
+    const system_struct = @typeInfo(SystemType).Struct;
+    inline while (true) {
+        if (current_module_index < system_struct.fields.len) {
+            if (system_struct.fields[current_module_index].type == CurrentModule) {
+                break;
+            }
+            current_module_index += 1;
+        } else {
+            @compileError("Module `{any}` is not present in the current module system");
+        }
+    }
+    comptime var fields_before: [current_module_index]std.builtin.Type.StructField = undefined;
+    @memcpy(&fields_before, system_struct.fields[0..current_module_index]);
+    const SystemBefore = @Type(.{
+        .Struct = .{
+            .layout = .auto,
+            .fields = &fields_before,
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+    inline for (required_modules) |Module| {
+        if (comptime find_module_name(SystemBefore, Module) == null) {
+            @compileError(std.fmt.comptimePrint("Module {s} is required to be defined before module {s} but it wasn't found", .{ @typeName(CurrentModule), @typeName(Module) }));
+        }
+    }
 }
