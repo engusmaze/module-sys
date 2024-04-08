@@ -1,0 +1,21 @@
+name: Update fetch link in README with Latest Commit ID
+
+on:
+  push:
+    branches:
+      - main  # Change this to your main branch name if it's different
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Get latest commit ID
+      run: echo "::set-output name=commit_id::$(git rev-parse --short HEAD)"
+      
+    - name: Update README.md
+      run: |
+        sed -i "s/module-sys\/archive\/.+\.tar\.gz/module-sys\/archive\/${{ steps.update-readme.outputs.commit_id }}\.tar\.gz/g" README.md
