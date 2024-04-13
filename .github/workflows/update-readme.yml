@@ -19,7 +19,7 @@ jobs:
         uses: sed/edit-replace@v4
         with:
           file: "README.md"
-          find: "(?<=archive\/)\b[a-f0-9]+\b"
+          find: "(?<=archive\\/)\\b[a-f0-9]+\\b"
           replace: ${{ steps.commit_id.outputs.COMMIT_ID }}
 
       - name: Commit and push changes
