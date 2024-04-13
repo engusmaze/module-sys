@@ -9,23 +9,20 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v
 
       - name: Get latest commit ID
         id: commit_id
-        run: echo "::set-output name=COMMIT_ID; value=$(git rev-parse HEAD)"
+        run: echo "::set-output name=SHA; value=$(git rev-parse HEAD)"
 
-      - name: Update README.md (regex)
-        uses: sed/edit-replace@v4
-        with:
-          file: "README.md"
-          find: "(?<=archive\\/)\\b[a-f0-9]+\\b"
-          replace: ${{ steps.commit_id.outputs.COMMIT_ID }}
+      - name: Update README.md
+        run: sed -i "s/(?<=archive\/)\b\w+\b/${{ steps.update-readme.outputs.commit_id }}/g" README.md
+
 
       - name: Commit and push changes
         run: |
           git config user.name 'GitHub Actions'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add README.md
-          git commit -m "New commit ID ${{ steps.commit_id.outputs.COMMIT_ID }}"
+          git commit -m "Update README.md with commit ID (${{ steps.commit_id.outputs.SHA1SHORT }})"
           git push origin main
