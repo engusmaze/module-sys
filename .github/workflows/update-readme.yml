@@ -12,11 +12,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Get latest commit ID
-        id: commit_id
-        run: echo "::set-output name=SHA; value=$(git rev-parse HEAD)"
+        id: commit-id
+        run: echo "::set-output name=commit_id; value=$(git rev-parse HEAD)"
 
       - name: Update README.md
-        run: sed -i "s/(?<=archive\/)\b\w+\b/${{ steps.update-readme.outputs.commit_id }}/g" README.md
+        run: sed -i "s/(?<=archive\/)\b\w+\b/${{ steps.commit_id.outputs.commit_id }}/g" README.md
 
 
       - name: Commit and push changes
