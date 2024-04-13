@@ -3,28 +3,29 @@ name: Update fetch link in README with Latest Commit ID
 on:
   push:
     branches:
-      - main  # Change this to your main branch name if it's different
+      - main
 
 jobs:
   update-readme:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Get latest commit ID
-      id: commit
-      run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - name: Get latest commit ID
+        id: commit_id
+        run: echo "::set-output name=COMMIT_ID; value=$(git rev-parse HEAD)"
 
-    - name: Update README.md
-      run: |
-        sed -i "s/module-sys\/archive\/.+\.tar\.gz/module-sys\/archive\/${{ steps.update-readme.outputs.commit_id }}.tar.gz/g" README.md
+      - name: Update README.md (regex)
+        uses: sed/edit-replace@v4
+        with:
+          file: "README.md"
+          find: "(?<=archive\/)\b[a-f0-9]+\b"
+          replace: ${{ steps.commit_id.outputs.COMMIT_ID }}
 
-    - name: Commit and push changes
-      run: |
-        git config --global user.name 'GitHub Actions'
-        git config --global user.email 'actions@users.noreply.github.com'
-        git add README.md
-        git commit -m "Update README.md with latest commit ID"
-        git push
+      - name: Commit and push changes
+        run: |
+          git config user.name 'GitHub Actions'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m "New commit ID ${{ steps.commit_id.outputs.COMMIT_ID }}"
+          git push origin main
