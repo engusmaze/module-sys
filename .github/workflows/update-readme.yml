@@ -9,7 +9,7 @@ jobs:
   update-readme:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v
+      - uses: actions/checkout@v4
 
       - name: Get latest commit ID
         id: commit_id
