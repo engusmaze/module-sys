@@ -51,7 +51,7 @@ pub fn invoke(sys: anytype, comptime function_name: []const u8, args: anytype) v
         const real_params = params[2..params.len];
         if (arg_fields.len != real_params.len)
             continue :search;
-        for (arg_fields, real_params) |arg, param| {
+        inline for (arg_fields, real_params) |arg, param| {
             if (arg.type != param.type) {
                 continue :search;
             }
