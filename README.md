@@ -21,8 +21,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-
-    // Add the module to an executable or library
     exe.root_module.addImport("module-sys", module_sys.module("module-sys"));
 }
 ```

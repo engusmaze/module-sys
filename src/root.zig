@@ -9,7 +9,7 @@ fn findModuleName(SystemType: type, comptime ModuleType: type) ?[]const u8 {
     return null;
 }
 
-fn RealSystemType(TopType: type) type {
+pub fn getSystemType(TopType: type) type {
     const topTypeInfo = @typeInfo(TopType);
     if (topTypeInfo != .Pointer) {
         @compileError("Expected a reference to a module system instance");
@@ -23,7 +23,7 @@ fn RealSystemType(TopType: type) type {
 
 /// Gets a moduel from module system
 pub inline fn get(sys: anytype, comptime ModuleType: type) *ModuleType {
-    const SystemType = RealSystemType(@TypeOf(sys));
+    const SystemType = getSystemType(@TypeOf(sys));
     if (comptime findModuleName(SystemType, ModuleType)) |module_name| {
         return &@field(sys, module_name);
     } else {
@@ -33,7 +33,7 @@ pub inline fn get(sys: anytype, comptime ModuleType: type) *ModuleType {
 
 /// Calls a function on each module of system with specified arguments
 pub fn invoke(sys: anytype, comptime function_name: []const u8, args: anytype) void {
-    const SystemType = RealSystemType(@TypeOf(sys));
+    const SystemType = getSystemType(@TypeOf(sys));
     search: inline for (std.meta.fields(SystemType)) |field| {
         const ModuleType = field.type;
 
@@ -65,7 +65,7 @@ pub fn invoke(sys: anytype, comptime function_name: []const u8, args: anytype) v
 }
 
 pub fn require(sys: anytype, comptime CurrentModule: type, comptime required_modules: []const type) void {
-    const SystemType = RealSystemType(@TypeOf(sys));
+    const SystemType = getSystemType(@TypeOf(sys));
     inline for (required_modules) |Module| {
         if (comptime findModuleName(SystemType, Module) == null) {
             @compileError(std.fmt.comptimePrint("Module `{s}` requires module `{s}` which is not found in the system", .{ @typeName(CurrentModule), @typeName(Module) }));
@@ -74,7 +74,7 @@ pub fn require(sys: anytype, comptime CurrentModule: type, comptime required_mod
 }
 
 pub fn requireBefore(sys: anytype, comptime CurrentModule: type, comptime required_modules: []const type) void {
-    const SystemType = RealSystemType(@TypeOf(sys));
+    const SystemType = getSystemType(@TypeOf(sys));
     comptime var current_module_index = 0;
     const system_struct = @typeInfo(SystemType).Struct;
     inline while (true) {
